@@ -1,6 +1,6 @@
 import json
-import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Any, Dict, List
 
 
@@ -30,26 +30,41 @@ class JSONSaver(BaseStorage):
     """Хранение данных в JSON файле без дублей вакансий"""
 
     def __init__(self, filename: str | None = None) -> None:
-        self._filename = filename or os.path.join("data", "vacancies.json")
-        os.makedirs(os.path.dirname(self._filename), exist_ok=True)
-        if not os.path.exists(self._filename):
-            with open(self._filename, "w", encoding="utf-8") as f:
-                json.dump([], f, ensure_ascii=False, indent=4)
+        if filename:
+            self._filename = str(Path(filename))
+        else:
+            project_root = Path(__file__).resolve().parents[1]
+            self._filename = str(project_root / "data" / "vacancies.json")
+        Path(self._filename).parent.mkdir(parents=True, exist_ok=True)
+        self._ensure_file_once()
+
+    def _ensure_file_once(self) -> None:
+        """Создаёт файл с [] ТОЛЬКО если его нет или он пустой."""
+        p = Path(self._filename)
+        if not p.exists() or p.stat().st_size == 0:
+            p.write_text("[]", encoding="utf-8")
 
     def _read_all(self) -> List[Dict[str, Any]]:
-        with open(self._filename, "r", encoding="utf-8") as f:
-            return json.load(f)
+        """Возвращает список. При ошибке парсинга возвращает [] и НЕ затирает файл."""
+        p = Path(self._filename)
+        try:
+            text = p.read_text(encoding="utf-8")
+            data = json.loads(text) if text.strip() else []
+            return data if isinstance(data, list) else []
+        except Exception:
+            return []
 
     def _write_all(self, rows: List[Dict[str, Any]]) -> None:
-        with open(self._filename, "w", encoding="utf-8") as f:
-            json.dump([], f, ensure_ascii=False, indent=4)
+        p = Path(self._filename)
+        p.write_text(json.dumps(rows, ensure_ascii=False, indent=4), encoding="utf-8")
 
     def add_vacancy(self, vacancy: Dict[str, Any]) -> None:
         rows = self._read_all()
-        urls = {r.get("url") for r in rows}
-        if vacancy.get("url") not in urls:
-            rows.append(vacancy)
-            self._write_all(rows)
+        url = (vacancy.get("url") or "").strip()
+        if url and url in {r.get("url") for r in rows}:
+            return
+        rows.append(vacancy)
+        self._write_all(rows)
 
     def get_vacancies(
         self, keyword: str | None = None, salary_from: int | None = None, salary_to: int | None = None
