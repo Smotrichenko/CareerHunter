@@ -61,7 +61,7 @@ class JSONSaver(BaseStorage):
             result = [r for r in result if kw in (r.get("title", "").lower() + " " + r.get("description", "").lower())]
         if salary_from is not None or salary_to is not None:
             low = salary_from or 0
-            high = salary_to or 10**10
+            high = salary_to or 10**6
 
             def ok(r: Dict[str, Any]) -> bool:
                 s_from = int(r.get("salary_from") or 0)
