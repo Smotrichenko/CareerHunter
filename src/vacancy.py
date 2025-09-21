@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List
 
 
@@ -11,8 +12,8 @@ class Vacancy:
     ) -> None:
         self.title = self._validate_str(title, "Без названия")
         self.url = self._validate_str(url, "")
-        self.salary_from, self.salary_to, self.currency = self._validate_str(salary_from, salary_to, currency)
-        self.description = self._validate_str(description, "Без названия")
+        self.salary_from, self.salary_to, self.currency = self._validate_salary(salary_from, salary_to, currency)
+        self.description = self._validate_str(description, "Описание не указано")
 
     # Приватная валидация данных
     def _validate_str(self, value: Any, default: str) -> str:
@@ -49,15 +50,18 @@ class Vacancy:
     @classmethod
     def from_hh(cls, item: Dict[str, Any]) -> "Vacancy":
         name = item.get("name")
-        url = item.get("url") or item.get("alternate_url") or ""
+        url = item.get("alternate_url") or item.get("url") or ""
         salary = item.get("salary") or {}
-        description = item.get("snippet", {}).get("requirement") or item.get("snippet", {}).get("responsibility") or ""
+        req = item.get("snippet", {}).get("requirement") or ""
+        resp = item.get("snippet", {}).get("responsibility") or ""
+        desc_raw = f"{req} {resp}".strip()
+        description = re.sub(r"<.*?>", "", desc_raw)
         return cls(
             title=name or "Без названия",
             url=url,
             salary_from=salary.get("from"),
             salary_to=salary.get("to"),
-            currnecy=salary.get("currency"),
+            currency=salary.get("currency"),
             description=description or "Описание не указано",
         )
 

@@ -36,13 +36,20 @@ def get_vacancies_by_salary(vacancies: List[Vacancy], salary_range: str) -> List
 
 
 def sort_vacancies(vacancies: List[Vacancy]) -> List[Vacancy]:
+    """Сортировка вакансий по убыванию"""
     return sorted(vacancies, reverse=True)
 
 
 def get_top_vacancies(vacancies: List[Vacancy], n: int) -> List[Vacancy]:
-    return vacancies[: max(0, n)]
+    """ТОП вакансии после фильтров"""
+    if n <= 0:
+        return []
+    return vacancies[:n]
 
 
 def print_vacancies(vacancies: List[Vacancy]) -> None:
+    if not vacancies:
+        print("По заданным условиям ничего не найдено.")
+        return
     for i, v in enumerate(vacancies, 1):
-        return f"{i}, {v}"
+        print(f"{i}. {v}")
